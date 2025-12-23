@@ -1,4 +1,5 @@
 use crate::config::PointCloud2ListenerConfig;
+use crate::ros;
 use byteorder::{ByteOrder, LittleEndian};
 use colorgrad::Gradient;
 use std::sync::{Arc, RwLock};
@@ -7,14 +8,13 @@ use nalgebra::geometry::Point3;
 use tui::style::Color;
 
 use crate::transformation::ros_transform_to_isometry;
-use rosrust;
 use rustros_tf;
 
 pub struct PointCloud2Listener {
     pub points: Arc<RwLock<Vec<ColoredPoint>>>,
     _tf_listener: Arc<rustros_tf::TfListener>,
     _static_frame: String,
-    _subscriber: rosrust::Subscriber,
+    _subscriber: ros::rosrust::Subscriber,
 }
 
 #[derive(Clone)]
@@ -101,7 +101,7 @@ impl PointCloud2Listener {
         let str_ = static_frame.clone();
         let local_listener = tf_listener.clone();
         let use_rgb = config.use_rgb.clone();
-        let _sub = rosrust::subscribe(
+        let _sub = ros::subscribe(
             &config.topic,
             1,
             move |cloud: rosrust_msg::sensor_msgs::PointCloud2| {
@@ -142,7 +142,7 @@ impl PointCloud2Listener {
                 *cb_occ_points = points;
             },
         )
-        .unwrap();
+        ;
 
         PointCloud2Listener {
             points: occ_points,

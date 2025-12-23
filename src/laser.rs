@@ -1,8 +1,8 @@
 use crate::config::ListenerConfigColor;
+use crate::ros;
 use crate::transformation;
 use std::sync::{Arc, RwLock};
 
-use rosrust;
 use rustros_tf;
 
 pub struct LaserListener {
@@ -10,7 +10,7 @@ pub struct LaserListener {
     pub points: Arc<RwLock<Vec<(f64, f64)>>>,
     _tf_listener: Arc<rustros_tf::TfListener>,
     _static_frame: String,
-    _subscriber: rosrust::Subscriber,
+    _subscriber: ros::rosrust::Subscriber,
 }
 
 impl LaserListener {
@@ -24,7 +24,7 @@ impl LaserListener {
         let str_ = static_frame.clone();
 
         let local_listener = tf_listener.clone();
-        let laser_sub = rosrust::subscribe(
+        let laser_sub = ros::subscribe(
             &config.topic,
             2,
             move |scan: rosrust_msg::sensor_msgs::LaserScan| {
@@ -55,7 +55,7 @@ impl LaserListener {
                 *cb_scan_points = points;
             },
         )
-        .unwrap();
+        ;
 
         LaserListener {
             config,

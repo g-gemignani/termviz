@@ -2,6 +2,7 @@ use crate::app_modes::{input, AppMode, BaseMode, Drawable};
 use crate::config::Color as ConfigColor;
 use crate::config::TermvizConfig;
 use crate::config::{ImageListenerConfig, ListenerConfig, ListenerConfigColor, PoseListenerConfig};
+use crate::ros;
 use rand::Rng;
 use tui::backend::Backend;
 use tui::layout::{Alignment, Constraint, Direction, Layout};
@@ -169,10 +170,9 @@ impl TopicManager {
         // Collect all topics, which:
         //  - are supported
         //  - are inactive
-        let mut supported_topics: Vec<[String; 2]> = rosrust::topics()
-            .unwrap()
-            .iter()
-            .map(|topic| [topic.name.to_string(), topic.datatype.to_string()])
+        let mut supported_topics: Vec<[String; 2]> = ros::topics()
+            .into_iter()
+            .map(|(name, datatype)| [name, datatype])
             .filter(|el| supported_topic_types.contains(&el[1].to_string()))
             .filter(|el| !all_active_topics.contains(&el))
             .collect();

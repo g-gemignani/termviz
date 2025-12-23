@@ -1,7 +1,7 @@
 use crate::app_modes::viewport::{UseViewport, Viewport};
 use crate::app_modes::{input, AppMode, BaseMode};
 use crate::config::{TeleopConfig, TeleopMode};
-use rosrust;
+use crate::ros;
 use rosrust_msg;
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -11,7 +11,7 @@ use tui::widgets::canvas::Context;
 pub struct Teleoperate {
     viewport: Rc<RefCell<Viewport>>,
     current_velocities: Velocities,
-    cmd_vel_pub: rosrust::Publisher<rosrust_msg::geometry_msgs::Twist>,
+    cmd_vel_pub: ros::rosrust::Publisher<rosrust_msg::geometry_msgs::Twist>,
     increment: f64,
     increment_step: f64,
     publish_cmd_vel_when_idle: bool,
@@ -37,7 +37,7 @@ fn move_towards_zero(mut num: f64, increment: f64) -> f64 {
 
 impl Teleoperate {
     pub fn new(viewport: Rc<RefCell<Viewport>>, config: TeleopConfig) -> Teleoperate {
-        let cmd_vel_publisher = rosrust::publish(&config.cmd_vel_topic, 1).unwrap();
+        let cmd_vel_publisher = ros::publish(&config.cmd_vel_topic, 1);
         let initial_velocities = Velocities {
             x: 0.,
             y: 0.,

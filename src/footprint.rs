@@ -1,6 +1,6 @@
 use crate::transformation;
 
-use rosrust;
+use crate::ros;
 use rosrust_msg;
 
 const DEFAULT_FOOTPRINT: [[f64; 2]; 4] =
@@ -15,7 +15,7 @@ pub fn get_default_footprint() -> Vec<(f64, f64)> {
 }
 
 pub fn get_footprint() -> Vec<(f64, f64)> {
-    let param = rosrust::param("/footprint");
+    let param = ros::param("/footprint");
     let mut result = Vec::<(f64, f64)>::new();
     match param {
         Some(footprint) => {

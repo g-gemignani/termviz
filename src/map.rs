@@ -1,10 +1,10 @@
 use crate::config::MapListenerConfig;
+use crate::ros;
 use crate::transformation;
 use std::sync::{Arc, RwLock};
 
 use nalgebra::geometry::{Isometry3, Point3, Quaternion, Translation3, UnitQuaternion};
 
-use rosrust;
 use rustros_tf;
 
 pub struct MapListener {
@@ -12,7 +12,7 @@ pub struct MapListener {
     pub points: Arc<RwLock<Vec<(f64, f64)>>>,
     _tf_listener: Arc<rustros_tf::TfListener>,
     _static_frame: String,
-    _subscriber: rosrust::Subscriber,
+    _subscriber: ros::rosrust::Subscriber,
 }
 
 impl MapListener {
@@ -26,7 +26,7 @@ impl MapListener {
         let str_ = static_frame.clone();
         let local_listener = tf_listener.clone();
         let threshold = config.threshold.clone();
-        let _map_sub = rosrust::subscribe(
+        let _map_sub = ros::subscribe(
             &config.topic,
             1,
             move |map: rosrust_msg::nav_msgs::OccupancyGrid| {
@@ -74,7 +74,7 @@ impl MapListener {
                 *cb_occ_points = points;
             },
         )
-        .unwrap();
+        ;
 
         MapListener {
             config,

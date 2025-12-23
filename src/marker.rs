@@ -4,13 +4,13 @@
 //! This module allows to subsribe to topics that publish them and project them into the
 //! 2D plane. Finally, it takes care of their lifecycle: ADD, DELETE and timeout.
 use crate::config::ListenerConfig;
+use crate::ros;
 use nalgebra::base::Vector3;
 use nalgebra::geometry::Isometry3;
 use std::collections::HashMap;
 use std::f64::consts::PI;
 use std::sync::{Arc, Mutex, RwLock};
 
-use rosrust;
 use rustros_tf::transforms::nalgebra::geometry::Point3;
 use rustros_tf::transforms::{isometry_from_pose, isometry_from_transform};
 
@@ -712,7 +712,7 @@ impl MarkersLifecycle {
 
 pub struct MarkersListener {
     markers_lifecycle: Arc<RwLock<MarkersLifecycle>>,
-    subscribers: Vec<Arc<Mutex<rosrust::Subscriber>>>,
+    subscribers: Vec<Arc<Mutex<ros::rosrust::Subscriber>>>,
 }
 
 impl MarkersListener {
@@ -737,7 +737,7 @@ impl MarkersListener {
     pub fn add_marker_listener(&mut self, config: &ListenerConfig) {
         let markers_container_ref = self.markers_lifecycle.clone();
 
-        let sub = rosrust::subscribe(
+        let sub = ros::subscribe(
             &config.topic,
             2,
             move |msg: rosrust_msg::visualization_msgs::Marker| {
@@ -756,7 +756,7 @@ impl MarkersListener {
             },
         );
 
-        self.subscribers.push(Arc::new(Mutex::new(sub.unwrap())));
+        self.subscribers.push(Arc::new(Mutex::new(sub)));
     }
 
     /// Adds a subscriber for a marker array message topic.
@@ -766,7 +766,7 @@ impl MarkersListener {
     pub fn add_marker_array_listener(&mut self, config: &ListenerConfig) {
         let markers_container_ref = self.markers_lifecycle.clone();
 
-        let sub = rosrust::subscribe(
+        let sub = ros::subscribe(
             &config.topic,
             2,
             move |msg: rosrust_msg::visualization_msgs::MarkerArray| {
@@ -789,6 +789,6 @@ impl MarkersListener {
             },
         );
 
-        self.subscribers.push(Arc::new(Mutex::new(sub.unwrap())));
+        self.subscribers.push(Arc::new(Mutex::new(sub)));
     }
 }

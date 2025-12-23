@@ -1,7 +1,7 @@
 use crate::config::ImageListenerConfig;
+use crate::ros;
 use byteorder::{ByteOrder, LittleEndian};
 use image::{imageops, DynamicImage, ImageBuffer, Rgb, RgbImage, RgbaImage};
-use rosrust;
 use rosrust_msg;
 use std::sync::{Arc, RwLock};
 
@@ -85,7 +85,7 @@ fn read_u16(vec: &Vec<u8>) -> Vec<u8> {
 pub struct ImageListener {
     pub config: ImageListenerConfig,
     pub img: Arc<RwLock<RgbaImage>>,
-    _subscriber: Option<rosrust::Subscriber>,
+    _subscriber: Option<ros::rosrust::Subscriber>,
     _rotation: Arc<RwLock<i64>>,
 }
 
@@ -104,7 +104,7 @@ impl ImageListener {
     pub fn setup_sub(&mut self) {
         let cb_img = self.img.clone();
         let cb_rotation = self._rotation.clone();
-        let sub = rosrust::subscribe(
+        let sub = ros::subscribe(
             &self.config.topic,
             1,
             move |img_msg: rosrust_msg::sensor_msgs::Image| {
@@ -119,8 +119,7 @@ impl ImageListener {
                 let mut cb_img = cb_img.write().unwrap();
                 *cb_img = img;
             },
-        )
-        .unwrap();
+        );
         self._subscriber = Some(sub)
     }
 

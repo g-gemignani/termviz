@@ -4,6 +4,7 @@ use crate::app_modes::viewport::{UseViewport, Viewport};
 use crate::app_modes::{input, AppMode, BaseMode};
 use crate::config::SendPoseConfig;
 use crate::footprint::get_current_footprint;
+use crate::ros;
 use crate::transformation;
 use approx::AbsDiffEq;
 use nalgebra::{Isometry2, Vector2};
@@ -20,14 +21,14 @@ trait BasePosePubWrapper {
 
 struct PosePubWrapper {
     topic: String,
-    publisher: rosrust::Publisher<rosrust_msg::geometry_msgs::Pose>,
+    publisher: ros::rosrust::Publisher<rosrust_msg::geometry_msgs::Pose>,
 }
 
 impl PosePubWrapper {
     pub fn new(topic: &String) -> PosePubWrapper {
         PosePubWrapper {
             topic: topic.clone(),
-            publisher: rosrust::publish(&topic, 1).unwrap(),
+            publisher: ros::publish(&topic, 1),
         }
     }
 }
@@ -44,14 +45,14 @@ impl BasePosePubWrapper for PosePubWrapper {
 
 struct PoseStampedPubWrapper {
     topic: String,
-    publisher: rosrust::Publisher<rosrust_msg::geometry_msgs::PoseStamped>,
+    publisher: ros::rosrust::Publisher<rosrust_msg::geometry_msgs::PoseStamped>,
 }
 
 impl PoseStampedPubWrapper {
     pub fn new(topic: &String) -> PoseStampedPubWrapper {
         PoseStampedPubWrapper {
             topic: topic.clone(),
-            publisher: rosrust::publish(&topic, 1).unwrap(),
+            publisher: ros::publish(&topic, 1),
         }
     }
 }
@@ -77,14 +78,14 @@ impl BasePosePubWrapper for PoseStampedPubWrapper {
 
 struct PoseCovPubWrapper {
     topic: String,
-    publisher: rosrust::Publisher<rosrust_msg::geometry_msgs::PoseWithCovarianceStamped>,
+    publisher: ros::rosrust::Publisher<rosrust_msg::geometry_msgs::PoseWithCovarianceStamped>,
 }
 
 impl PoseCovPubWrapper {
     pub fn new(topic: &String) -> PoseCovPubWrapper {
         PoseCovPubWrapper {
             topic: topic.clone(),
-            publisher: rosrust::publish(&topic, 1).unwrap(),
+            publisher: ros::publish(&topic, 1),
         }
     }
 }
@@ -124,7 +125,7 @@ impl SendPose {
         let base_link_pose = viewport.borrow().tf_listener.lookup_transform(
             &viewport.borrow().static_frame,
             &viewport.borrow().robot_frame,
-            rosrust::Time::new(),
+            ros::now(),
         );
 
         let robot_pose = if base_link_pose.is_ok() {
@@ -192,7 +193,7 @@ impl AppMode for SendPose {
         let base_link_pose = self.viewport.borrow().tf_listener.lookup_transform(
             &self.viewport.borrow().static_frame,
             &self.viewport.borrow().robot_frame,
-            rosrust::Time::new(),
+            ros::now(),
         );
 
         self.robot_pose = if base_link_pose.is_ok() {

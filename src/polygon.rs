@@ -1,4 +1,5 @@
 use crate::{config::ListenerConfigColor, transformation::ros_transform_to_isometry};
+use crate::ros;
 use nalgebra::Point3;
 use rustros_tf;
 use std::sync::{Arc, RwLock};
@@ -24,7 +25,7 @@ pub struct PolygonData {
 
 pub struct PolygonListener {
     _data: Arc<RwLock<PolygonData>>,
-    _subscriber: rosrust::Subscriber,
+    _subscriber: ros::rosrust::Subscriber,
 }
 
 impl PolygonData {
@@ -85,7 +86,7 @@ impl PolygonListener {
         }));
 
         let cloned_data = data.clone();
-        let sub = rosrust::subscribe(
+        let sub = ros::subscribe(
             &config.topic,
             1,
             move |msg: rosrust_msg::geometry_msgs::PolygonStamped| {
@@ -94,7 +95,7 @@ impl PolygonListener {
                 unlocked_data.update();
             },
         )
-        .unwrap();
+        ;
 
         return PolygonListener {
             _data: data,

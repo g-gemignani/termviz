@@ -10,6 +10,7 @@ mod marker;
 mod pointcloud;
 mod polygon;
 mod pose;
+mod ros;
 mod transformation;
 use futures::{future::FutureExt, select, StreamExt};
 use futures_timer::Delay;
@@ -26,8 +27,7 @@ use crossterm::{
     terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
 use dialoguer::Confirm;
-use rosrust;
-use rustros_tf::TfListener;
+use crate::ros::rustros_tf::TfListener;
 use std::error::Error;
 
 #[tokio::main]
@@ -56,7 +56,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let conf = config::get_config(matches.get_one("config"))?;
 
     println!("Connecting to ROS...");
-    rosrust::init("termviz");
+    ros::init("termviz");
 
     let mut key_to_input: HashMap<KeyCode, String> = conf
         .key_mapping
@@ -86,7 +86,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Waiting up to {}s for robot pose...", max_time.as_secs());
     let robot_pose_available = loop {
         if listener
-            .lookup_transform(&conf.fixed_frame, &conf.robot_frame, rosrust::Time::new())
+            .lookup_transform(&conf.fixed_frame, &conf.robot_frame, ros::now())
             .is_ok()
         {
             break true;

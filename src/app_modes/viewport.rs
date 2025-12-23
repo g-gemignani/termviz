@@ -4,6 +4,7 @@
 use crate::app_modes::{input, AppMode, Drawable};
 use crate::footprint::get_current_footprint;
 use crate::listeners::Listeners;
+use crate::ros;
 use crate::transformation::{self, iso2d_to_ros};
 use nalgebra::Isometry2;
 use std::sync::Arc;
@@ -165,7 +166,7 @@ impl UseViewport for Viewport {
         let res = self.tf_listener.clone().lookup_transform(
             &self.static_frame,
             &self.robot_frame,
-            rosrust::Time::new(),
+                ros::now(),
         );
         match &res {
             Ok(res) => res,
@@ -188,7 +189,7 @@ impl UseViewport for Viewport {
         let res = self.tf_listener.clone().lookup_transform(
             &self.static_frame,
             &self.robot_frame,
-            rosrust::Time::new(),
+                ros::now(),
         );
         match &res {
             Ok(res) => res,
@@ -249,7 +250,7 @@ impl UseViewport for Viewport {
         let base_link_pose = self.tf_listener.lookup_transform(
             &self.static_frame,
             &self.robot_frame,
-            rosrust::Time::new(),
+                ros::now(),
         );
 
         let robot_pose = if base_link_pose.is_ok() {
