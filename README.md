@@ -29,6 +29,23 @@ Build the project via cargo:
 cargo build --release
 ```
 
+### ROS1 / ROS2 feature flags
+
+By default, TermViz builds against ROS1 (`ros1` Cargo feature).
+
+- ROS1 build (explicit):
+  ```bash
+  cargo build --release --features ros1
+  ```
+- ROS2 build:
+  - Ensure you have a ROS2 environment sourced (e.g. `source /opt/ros/<distro>/setup.bash`) so `ROS_DISTRO` is a ROS2 distro (not `noetic`).
+  - Then build with:
+    ```bash
+    cargo build --release --no-default-features --features ros2
+    ```
+
+Note: for some ROS1 setups you may need `ROSRUST_MSG_PATH=/usr/share/` when building.
+
 After the build succeeded, the executable will be located in `target/release/` and can be used directly. No external libraries are needed, so it can be copied directly on a robot or another computer.
 
 ## How to use

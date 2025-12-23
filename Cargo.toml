@@ -10,8 +10,8 @@ description = "ROS visualization on the terminal"
 [features]
 default = ["ros1"]
 ros1 = ["dep:rosrust", "dep:rosrust_msg", "dep:rustros_tf"]
-# Placeholder for future ROS 2 backend (rclrs + message crates + TF2).
-ros2 = []
+# ROS 2 backend via `r2r` (rosidl-generated messages).
+ros2 = ["dep:r2r"]
 
 [dependencies]
 approx = "0.5.1"
@@ -25,6 +25,7 @@ dialoguer = "0.11.0"
 futures = "0.3"
 futures-timer = "3.0"
 image = "0.24"  # TODO: tui-image (see below) doesn't allow newer versions.
+indexmap = "=2.11.0"
 nalgebra = ">=0.29.0"
 rand = "0.8.5"
 serde = { version = "1.0.217", features = ["derive"] }
@@ -46,6 +47,10 @@ optional = true
 
 [dependencies.rustros_tf]
 git = "https://github.com/Magazino/rustros_tf"
+optional = true
+
+[dependencies.r2r]
+version = "0.9"
 optional = true
 
 [dependencies.confy]
