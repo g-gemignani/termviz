@@ -155,3 +155,66 @@ teleop:                        # Parameters for the Teleoperate mode.
 - Carsten Zumsande (termviz@zumsande.eu)
 - Emanuele Palazzolo (emanuele.palazzolo@gmail.com)
 - Michael März (michael0maerz@gmail.com)
+
+## Integration tests
+
+This repository includes black-box integration tests that exercise the built `termviz` binary as an external program. The tests are located in the `tests/` directory and are intended to be fast and hermetic where possible.
+
+- `tests/cli_help.rs`: verifies `termviz --help` prints the help text and exits successfully.
+- `tests/config_invalid.rs`: runs `termviz` with a malformed YAML config and asserts it fails early (before trying to connect to ROS).
+- `tests/tui_prompt_continue.rs` (ROS-gated): starts `roscore`, answers the TF "Continue?" prompt under a PTY, reaches terminal init, then exits cleanly via Ctrl+C.
+- `tests/ros_static_tf.rs` (ROS-gated): starts `roscore` and a static TF publisher, verifies `termviz` reaches terminal init without prompting, then exits cleanly via Ctrl+C.
+
+Test implementation notes:
+- Tests use `assert_cmd` for process assertions and `portable-pty` to drive the TUI in a pseudo-terminal (PTY) when needed.
+- A small harness is available at `tests/support/mod.rs` with utilities to spawn `termviz` under a PTY, collect output, and send keystrokes (Ctrl+C, answers to prompts, etc.).
+- There are two ROS-gated tests that exercise a positive startup path:
+  - `tests/tui_prompt_continue.rs`: starts a temporary `roscore`, runs `termviz` with `--tf-wait-time 0` to trigger the "Continue?" prompt, answers `y`, waits for terminal init, then exits via Ctrl+C.
+  - `tests/ros_static_tf.rs`: starts `roscore` and a `static_transform_publisher map base_link`, runs `termviz` and ensures it does not prompt (because TF is available), then exits via Ctrl+C.
+- ROS-gated tests are only run when `TERMVIZ_IT_ROS=1` is set in the environment. The test harness spawns a `roscore` on an ephemeral port and provides `ROS_MASTER_URI` to the child processes so a local ROS graph is used instead of any system ROS master.
+
+Requirements for ROS-gated tests
+- `roscore` and `rosrun` must be available in `PATH` (ROS1/Noetic or compatible)
+- Running the tests will create short-lived ROS processes and log directories under temporary directories used by the test harness.
+
+Running the tests
+- Run the default (fast) tests:
+
+```bash
+cargo test
+```
+
+- Run only the CLI/help test:
+
+```bash
+cargo test --test cli_help
+```
+
+- Enable and run ROS-gated tests locally (requires ROS install):
+
+```bash
+TERMVIZ_IT_ROS=1 cargo test
+```
+
+CI notes
+- To run ROS-gated tests in CI, use a test runner image that includes ROS (Noetic) and ensure `roscore`/`rosrun` are in `PATH`. Set `TERMVIZ_IT_ROS=1` in the job environment. Use the `--test-threads=1` flag if tests interfere with each other in your setup.
+
+Run tests locally:
+
+```bash
+cargo test
+```
+
+Run a specific test:
+
+```bash
+cargo test --test cli_help
+```
+
+To add ROS-gated tests for CI, provide a runner image with ROS (Noetic/ROS1) and enable tests with an environment variable such as `TERMVIZ_IT_ROS=1`.
+
+Example (enable ROS-gated tests):
+
+```bash
+TERMVIZ_IT_ROS=1 cargo test
+```
