@@ -52,9 +52,10 @@ After the build succeeded, the executable will be located in `target/release/` a
 
 To launch the visualizer, just run the `termviz` executable.
 
-The program looks for a configuration file named `termviz.yml` in `~/.config/termviz/` first, then in `/etc/termviz/`. If the file is not found, it prompts the user to create a default one. Alternatively, it is possible to pass a configuration file directly to the executable: `termviz <myconfig>.yml`.
 
-The program requires a running ROS master and an available TF between the robot frame (`base_link` by default) and a static frame (`map` by default). If the ROS parameter `/footprint`, it will be used to show the footprint of the robot.
+The program looks for a configuration file named `termviz.yml` in `~/.config/termviz/` first, then in `/etc/termviz/`. If no config is found, it starts with sensible defaults. If an existing config is missing newer fields (from a newer TermViz version), those fields are filled from defaults so older configs keep working. When no custom config path is provided, TermViz will persist the (possibly updated) config to `~/.config/termviz/termviz.yml` so future runs use the same settings. You may also pass a configuration file directly: `termviz <myconfig>.yml`.
+
+The program requires a running ROS master and an available TF between the robot frame (`base_link` by default) and a static frame (`map` by default). If the ROS parameter `/footprint` is present, its polygon will be used to show the robot footprint.
 
 Pressing `h` shows the help screen, which will describe the current mode and the keymap relative to the current mode. The mode can be switched using the number keys and the help screen will update accordingly.
 
@@ -173,65 +174,43 @@ teleop:                        # Parameters for the Teleoperate mode.
 - Emanuele Palazzolo (emanuele.palazzolo@gmail.com)
 - Michael März (michael0maerz@gmail.com)
 
+
 ## Integration tests
 
-This repository includes black-box integration tests that exercise the built `termviz` binary as an external program. The tests are located in the `tests/` directory and are intended to be fast and hermetic where possible.
+This repository includes black-box integration tests that exercise the built `termviz` binary as an external program. Tests live in `tests/` and aim to be fast and hermetic where possible.
 
-- `tests/cli_help.rs`: verifies `termviz --help` prints the help text and exits successfully.
+- `tests/cli_help.rs`: verifies `termviz --help` prints help text and exits successfully.
 - `tests/config_invalid.rs`: runs `termviz` with a malformed YAML config and asserts it fails early (before trying to connect to ROS).
 - `tests/tui_prompt_continue.rs` (ROS-gated): starts `roscore`, answers the TF "Continue?" prompt under a PTY, reaches terminal init, then exits cleanly via Ctrl+C.
 - `tests/ros_static_tf.rs` (ROS-gated): starts `roscore` and a static TF publisher, verifies `termviz` reaches terminal init without prompting, then exits cleanly via Ctrl+C.
 
-Test implementation notes:
-- Tests use `assert_cmd` for process assertions and `portable-pty` to drive the TUI in a pseudo-terminal (PTY) when needed.
-- A small harness is available at `tests/support/mod.rs` with utilities to spawn `termviz` under a PTY, collect output, and send keystrokes (Ctrl+C, answers to prompts, etc.).
-- There are two ROS-gated tests that exercise a positive startup path:
-  - `tests/tui_prompt_continue.rs`: starts a temporary `roscore`, runs `termviz` with `--tf-wait-time 0` to trigger the "Continue?" prompt, answers `y`, waits for terminal init, then exits via Ctrl+C.
-  - `tests/ros_static_tf.rs`: starts `roscore` and a `static_transform_publisher map base_link`, runs `termviz` and ensures it does not prompt (because TF is available), then exits via Ctrl+C.
-- ROS-gated tests are only run when `TERMVIZ_IT_ROS=1` is set in the environment. The test harness spawns a `roscore` on an ephemeral port and provides `ROS_MASTER_URI` to the child processes so a local ROS graph is used instead of any system ROS master.
+Implementation notes:
+- Tests use `assert_cmd` for process assertions and `portable-pty` to drive the TUI under a PTY when needed.
+- The test harness at `tests/support/mod.rs` provides utilities to spawn `termviz` under a PTY, collect output, and send keystrokes (Ctrl+C, prompt answers, etc.).
+- Two ROS-gated tests exercise positive startup paths: one that waits for a TF and prompts the user, and one that provides a static TF so no prompt appears.
+- ROS-gated tests are only executed when `TERMVIZ_IT_ROS=1` is set. The harness spawns an ephemeral `roscore` and sets `ROS_MASTER_URI` so tests use an isolated ROS master.
 
 Requirements for ROS-gated tests
-- `roscore` and `rosrun` must be available in `PATH` (ROS1/Noetic or compatible)
-- Running the tests will create short-lived ROS processes and log directories under temporary directories used by the test harness.
+- `roscore` and `rosrun` must be available in `PATH` (ROS1/Noetic or compatible).
+- Tests will create short-lived ROS processes and temporary log directories.
 
 Running the tests
-- Run the default (fast) tests:
 
 ```bash
 cargo test
 ```
 
-- Run only the CLI/help test:
+Run only the CLI/help test:
 
 ```bash
 cargo test --test cli_help
 ```
 
-- Enable and run ROS-gated tests locally (requires ROS install):
+Enable and run ROS-gated tests (local ROS install required):
 
 ```bash
 TERMVIZ_IT_ROS=1 cargo test
 ```
 
 CI notes
-- To run ROS-gated tests in CI, use a test runner image that includes ROS (Noetic) and ensure `roscore`/`rosrun` are in `PATH`. Set `TERMVIZ_IT_ROS=1` in the job environment. Use the `--test-threads=1` flag if tests interfere with each other in your setup.
-
-Run tests locally:
-
-```bash
-cargo test
-```
-
-Run a specific test:
-
-```bash
-cargo test --test cli_help
-```
-
-To add ROS-gated tests for CI, provide a runner image with ROS (Noetic/ROS1) and enable tests with an environment variable such as `TERMVIZ_IT_ROS=1`.
-
-Example (enable ROS-gated tests):
-
-```bash
-TERMVIZ_IT_ROS=1 cargo test
-```
+- To run ROS-gated tests in CI, use a runner image that contains ROS (Noetic) and ensure `roscore`/`rosrun` are in `PATH`. Set `TERMVIZ_IT_ROS=1` in the job environment. Add `--test-threads=1` if tests interfere with each other in your CI environment.

@@ -16,15 +16,19 @@ pub fn termviz_bin() -> PathBuf {
 }
 
 pub fn minimal_config_yaml() -> &'static str {
-    // Minimal, fully-specified config so `confy::load_path` succeeds.
+    // Minimal config so `confy::load_path` succeeds.
     // Keep topic lists mostly empty to avoid requiring message types.
+    // Intentionally omits some `teleop` fields to exercise defaults.
     r#"
 fixed_frame: map
 robot_frame: base_link
 
 map_topics:
   - topic: map
-    color: { r: 255, g: 255, b: 255 }
+        color:
+            r: 255
+            g: 255
+            b: 255
     threshold: 1
 laser_topics: []
 marker_topics: []
@@ -51,7 +55,6 @@ teleop:
   default_increment: 0.1
   increment_step: 0.1
   cmd_vel_topic: cmd_vel
-  publish_cmd_vel_when_idle: true
   mode: Safe
   max_vel: 0.2
 "#

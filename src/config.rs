@@ -24,6 +24,22 @@ const fn default_teleop_max_vel() -> f64 {
     0.2
 }
 
+const fn default_teleop_increment() -> f64 {
+    0.1
+}
+
+const fn default_teleop_increment_step() -> f64 {
+    0.1
+}
+
+fn default_teleop_cmd_vel_topic() -> String {
+    "cmd_vel".to_string()
+}
+
+const fn default_publish_cmd_vel_when_idle() -> bool {
+    true
+}
+
 const fn color_white() -> Color {
     Color {
         r: 255,
@@ -111,9 +127,13 @@ pub enum TeleopMode {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct TeleopConfig {
+    #[serde(default = "default_teleop_increment")]
     pub default_increment: f64,
+    #[serde(default = "default_teleop_increment_step")]
     pub increment_step: f64,
+    #[serde(default = "default_teleop_cmd_vel_topic")]
     pub cmd_vel_topic: String,
+    #[serde(default = "default_publish_cmd_vel_when_idle")]
     pub publish_cmd_vel_when_idle: bool,
     #[serde(default)]
     pub mode: TeleopMode,
@@ -135,6 +155,7 @@ impl Default for TeleopConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(from = "TermvizConfigPartial")]
 pub struct TermvizConfig {
     pub fixed_frame: String,
     pub robot_frame: String,
@@ -145,7 +166,6 @@ pub struct TermvizConfig {
     pub marker_array_topics: Vec<ListenerConfig>,
     pub path_topics: Vec<PoseListenerConfig>,
     pub pointcloud2_topics: Vec<PointCloud2ListenerConfig>,
-    #[serde(default)]
     pub polygon_stamped_topics: Vec<ListenerConfigColor>,
     pub pose_array_topics: Vec<PoseListenerConfig>,
     pub pose_stamped_topics: Vec<PoseListenerConfig>,
@@ -155,7 +175,209 @@ pub struct TermvizConfig {
     pub visible_area: Vec<f64>, //Borders of map from center in Meter
     pub zoom_factor: f64,
     pub key_mapping: HashMap<String, String>,
+        #[serde(default)]
     pub teleop: TeleopConfig,
+}
+
+#[derive(Debug, Deserialize, Default)]
+struct TermvizConfigPartial {
+    fixed_frame: Option<String>,
+    robot_frame: Option<String>,
+    map_topics: Option<Vec<MapListenerConfig>>,
+    laser_topics: Option<Vec<ListenerConfigColor>>,
+    marker_topics: Option<Vec<ListenerConfig>>,
+    image_topics: Option<Vec<ImageListenerConfig>>,
+    marker_array_topics: Option<Vec<ListenerConfig>>,
+    path_topics: Option<Vec<PoseListenerConfig>>,
+    pointcloud2_topics: Option<Vec<PointCloud2ListenerConfig>>,
+    polygon_stamped_topics: Option<Vec<ListenerConfigColor>>,
+    pose_array_topics: Option<Vec<PoseListenerConfig>>,
+    pose_stamped_topics: Option<Vec<PoseListenerConfig>>,
+    send_pose_topics: Option<Vec<SendPoseConfig>>,
+    target_framerate: Option<i64>,
+    axis_length: Option<f64>,
+    visible_area: Option<Vec<f64>>,
+    zoom_factor: Option<f64>,
+    key_mapping: Option<HashMap<String, String>>,
+    teleop: Option<TeleopConfig>,
+}
+
+impl From<TermvizConfigPartial> for TermvizConfig {
+    fn from(partial: TermvizConfigPartial) -> Self {
+        let mut cfg = TermvizConfig::default();
+
+        if let Some(v) = partial.fixed_frame {
+            cfg.fixed_frame = v;
+        }
+        if let Some(v) = partial.robot_frame {
+            cfg.robot_frame = v;
+        }
+        if let Some(v) = partial.map_topics {
+            cfg.map_topics = v;
+        }
+        if let Some(v) = partial.laser_topics {
+            cfg.laser_topics = v;
+        }
+        if let Some(v) = partial.marker_topics {
+            cfg.marker_topics = v;
+        }
+        if let Some(v) = partial.image_topics {
+            cfg.image_topics = v;
+        }
+        if let Some(v) = partial.marker_array_topics {
+            cfg.marker_array_topics = v;
+        }
+        if let Some(v) = partial.path_topics {
+            cfg.path_topics = v;
+        }
+        if let Some(v) = partial.pointcloud2_topics {
+            cfg.pointcloud2_topics = v;
+        }
+        if let Some(v) = partial.polygon_stamped_topics {
+            cfg.polygon_stamped_topics = v;
+        }
+        if let Some(v) = partial.pose_array_topics {
+            cfg.pose_array_topics = v;
+        }
+        if let Some(v) = partial.pose_stamped_topics {
+            cfg.pose_stamped_topics = v;
+        }
+        if let Some(v) = partial.send_pose_topics {
+            cfg.send_pose_topics = v;
+        }
+        if let Some(v) = partial.target_framerate {
+            cfg.target_framerate = v;
+        }
+        if let Some(v) = partial.axis_length {
+            cfg.axis_length = v;
+        }
+        if let Some(v) = partial.visible_area {
+            cfg.visible_area = v;
+        }
+        if let Some(v) = partial.zoom_factor {
+            cfg.zoom_factor = v;
+        }
+        if let Some(v) = partial.key_mapping {
+            cfg.key_mapping = v;
+        }
+        if let Some(v) = partial.teleop {
+            cfg.teleop = v;
+        }
+
+        cfg
+    }
+}
+
+#[cfg(test)]
+mod tests {
+        use super::*;
+        use std::io::Write;
+        use tempfile::NamedTempFile;
+
+        fn write_config(contents: &str) -> NamedTempFile {
+                let mut file = NamedTempFile::new().expect("temp file");
+                file.write_all(contents.as_bytes()).expect("write yaml");
+                file
+        }
+
+        #[test]
+        fn loads_old_yaml_missing_new_teleop_field() {
+                // Intentionally omit `teleop.publish_cmd_vel_when_idle` to verify backward compat.
+            // Also omit `pointcloud2_topics` to verify newly-added top-level fields don't break older configs.
+                                let yaml = r#"
+fixed_frame: map
+robot_frame: base_link
+
+map_topics:
+-
+    topic: map
+    color:
+        r: 255
+        g: 255
+        b: 255
+    threshold: 1
+laser_topics: []
+marker_topics: []
+image_topics: []
+marker_array_topics: []
+path_topics: []
+polygon_stamped_topics: []
+pose_array_topics: []
+pose_stamped_topics: []
+send_pose_topics:
+-
+    topic: initialpose
+    msg_type: PoseWithCovarianceStamped
+
+target_framerate: 10
+axis_length: 0.5
+visible_area: [ -5.0, 5.0, -5.0, 5.0 ]
+zoom_factor: 0.1
+
+key_mapping: {}
+
+teleop:
+    default_increment: 0.1
+    increment_step: 0.1
+    cmd_vel_topic: cmd_vel
+    mode: Safe
+    max_vel: 0.2
+"#;
+
+                let file = write_config(yaml);
+                let cfg: TermvizConfig = confy::load_path(file.path()).expect("load config");
+                assert!(cfg.teleop.publish_cmd_vel_when_idle);
+                assert!(!cfg.pointcloud2_topics.is_empty());
+                assert_eq!(cfg.pointcloud2_topics[0].topic, "pointcloud2");
+        }
+
+        #[test]
+        fn loads_yaml_without_teleop_block() {
+                                let yaml = r#"
+fixed_frame: map
+robot_frame: base_link
+
+map_topics:
+-
+    topic: map
+    color:
+        r: 255
+        g: 255
+        b: 255
+    threshold: 1
+laser_topics: []
+marker_topics: []
+image_topics: []
+marker_array_topics: []
+path_topics: []
+pointcloud2_topics: []
+polygon_stamped_topics: []
+pose_array_topics: []
+pose_stamped_topics: []
+send_pose_topics:
+-
+    topic: initialpose
+    msg_type: PoseWithCovarianceStamped
+
+target_framerate: 10
+axis_length: 0.5
+visible_area: [ -5.0, 5.0, -5.0, 5.0 ]
+zoom_factor: 0.1
+
+key_mapping: {}
+"#;
+
+                let file = write_config(yaml);
+                let cfg: TermvizConfig = confy::load_path(file.path()).expect("load config");
+
+                let default = TeleopConfig::default();
+                assert_eq!(cfg.teleop.default_increment, default.default_increment);
+                assert_eq!(cfg.teleop.increment_step, default.increment_step);
+                assert_eq!(cfg.teleop.cmd_vel_topic, default.cmd_vel_topic);
+                assert_eq!(cfg.teleop.publish_cmd_vel_when_idle, default.publish_cmd_vel_when_idle);
+                assert_eq!(cfg.teleop.mode, default.mode);
+                assert_eq!(cfg.teleop.max_vel, default.max_vel);
+        }
 }
 
 impl Default for TermvizConfig {
